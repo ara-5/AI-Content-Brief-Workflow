@@ -2,6 +2,8 @@
 
 A lightweight, browser-based tool that transforms any topic into a **production-ready content brief** using a four-stage chained AI pipeline.
 
+🔗 **Live demo:** [ara-5.github.io/AI-Content-Brief-Workflow](https://ara-5.github.io/AI-Content-Brief-Workflow/)
+
 ---
 
 ## What It Does
@@ -112,3 +114,7 @@ Works in any browser that supports `fetch`, `async/await`, and `localStorage` �
 ## License
 
 MIT — use freely, modify as needed.
+
+---
+
+Developed with ❤️ by Athira
