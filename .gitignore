@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment files — never commit API keys
+.env
+.env.local
+.env.*.local
+*.key
+*.secret
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Content Brief Workflow</title>
+  <meta name="description" content="Four-stage AI pipeline that turns any topic into a production-ready content brief — intent analysis, outline, brief drafting, and quality check." />
+
+  <!--
+    Content Security Policy
+    connect-src is restricted to api.anthropic.com only.
+    script-src 'self' prevents inline script injection attacks.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 style-src   'self';
+                 script-src  'self';
+                 connect-src https://api.anthropic.com;
+                 img-src     'self' data:;" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header-row">
+    <div class="header">
+      <h1>AI content brief workflow</h1>
+      <p>Four-stage pipeline: intent analysis → outline → brief draft → quality check</p>
+    </div>
+    <button class="btn-settings" id="settings-btn" title="API key settings">⚙ Settings</button>
+  </div>
+
+  <!-- Pipeline tracker -->
+  <div class="pipeline-track">
+    <div class="stage-node">
+      <div class="node-pill" id="pill-intent"><div class="node-dot"></div> 1. Intent analysis</div>
+    </div>
+    <div class="connector"></div>
+    <div class="stage-node">
+      <div class="node-pill" id="pill-outline"><div class="node-dot"></div> 2. Outline</div>
+    </div>
+    <div class="connector"></div>
+    <div class="stage-node">
+      <div class="node-pill" id="pill-brief"><div class="node-dot"></div> 3. Draft brief</div>
+    </div>
+    <div class="connector"></div>
+    <div class="stage-node">
+      <div class="node-pill" id="pill-qa"><div class="node-dot"></div> 4. Quality check</div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-section">
+    <div class="input-row">
+      <div class="input-group">
+        <div class="input-meta">
+          <label for="topic-input">Topic or content goal</label>
+          <span class="char-counter" id="char-counter">0 / 300</span>
+        </div>
+        <input
+          type="text"
+          id="topic-input"
+          maxlength="300"
+          placeholder="e.g. Why companies are adopting AI agents in 2025"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn-run" id="run-btn" onclick="runWorkflow()">Run workflow ↗</button>
+    </div>
+    <div class="examples">
+      <span class="examples-label">Try:</span>
+      <div class="example-chip" onclick="setExample(this)">The rise of agentic AI</div>
+      <div class="example-chip" onclick="setExample(this)">Remote work productivity tips</div>
+      <div class="example-chip" onclick="setExample(this)">Sustainable investing for beginners</div>
+      <div class="example-chip" onclick="setExample(this)">Building a second brain</div>
+    </div>
+  </div>
+
+  <!-- Stage cards -->
+  <div class="stages-grid">
+    <div class="stage-card" id="card-intent">
+      <div class="stage-header">
+        <span class="stage-title">Intent analysis</span>
+        <span class="stage-status status-idle" id="status-intent">idle</span>
+      </div>
+      <div class="stage-body" id="body-intent">Identifies audience, tone, content type, and key angles.</div>
+    </div>
+    <div class="stage-card" id="card-outline">
+      <div class="stage-header">
+        <span class="stage-title">Outline generation</span>
+        <span class="stage-status status-idle" id="status-outline">idle</span>
+      </div>
+      <div class="stage-body" id="body-outline">Structures the narrative arc and section headings.</div>
+    </div>
+    <div class="stage-card" id="card-brief">
+      <div class="stage-header">
+        <span class="stage-title">Brief drafting</span>
+        <span class="stage-status status-idle" id="status-brief">idle</span>
+      </div>
+      <div class="stage-body" id="body-brief">Assembles a ready-to-use editorial brief.</div>
+    </div>
+    <div class="stage-card" id="card-qa">
+      <div class="stage-header">
+        <span class="stage-title">Quality check</span>
+        <span class="stage-status status-idle" id="status-qa">idle</span>
+      </div>
+      <div class="stage-body" id="body-qa">Scores clarity, specificity, and actionability.</div>
+    </div>
+  </div>
+
+  <!-- Final output -->
+  <div class="output-section" id="output-section">
+    <div class="output-header">
+      <span class="output-title">Final content brief</span>
+      <button class="btn-copy" onclick="copyBrief()">Copy brief</button>
+    </div>
+    <div class="output-body" id="output-body"></div>
+    <div class="quality-bar" id="quality-bar" style="display:none;">
+      <span class="quality-label">Quality score</span>
+      <div class="quality-track"><div class="quality-fill" id="quality-fill"></div></div>
+      <span class="quality-score" id="quality-score"></span>
+    </div>
+  </div>
+
+</div><!-- /.container -->
+
+<!-- API key modal -->
+<div class="modal-overlay hidden" id="key-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-box">
+    <h2 id="modal-title">Enter your Anthropic API key</h2>
+    <p>
+      Your key is stored only in your browser's <code>localStorage</code> and is never sent
+      anywhere except directly to <strong>api.anthropic.com</strong>.
+      Get a key at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>.
+    </p>
+    <div class="key-input-row">
+      <input
+        type="password"
+        id="key-input"
+        placeholder="sk-ant-api03-…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="btn-save-key" id="save-key-btn">Save</button>
+    </div>
+    <div class="modal-error" id="modal-error"></div>
+    <div class="modal-footer">
+      <span>Key is masked and never logged.</span>
+      <a href="#" id="modal-clear-btn" style="font-size:12px;color:#a32d2d;display:none;">Remove saved key</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/workflow.js"></script>
+</body>
+</html>
