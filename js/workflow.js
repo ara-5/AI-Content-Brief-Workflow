@@ -128,6 +128,40 @@ function resetAll() {
   finalBrief = '';
 }
 
+/* ── Error sanitizer ────────────────────────────────────────────── */
+
+/**
+ * Returns a safe, user-facing error string.
+ * Strips any content that could contain the API key — Anthropic auth
+ * errors sometimes echo the key back inside the message body.
+ */
+function sanitizeErrorMessage(msg) {
+  if (!msg) return 'Request failed. Try again.';
+  const lower = msg.toLowerCase();
+  // Auth / key errors
+  if (lower.includes('x-api-key') || lower.includes('api key') ||
+      lower.includes('authentication') || lower.includes('unauthorized') ||
+      lower.includes('sk-ant')) {
+    return 'Authentication failed. Check your API key in ⚙ Settings.';
+  }
+  // Rate limit
+  if (lower.includes('rate limit') || lower.includes('429')) {
+    return 'Rate limit reached. Wait a moment and try again.';
+  }
+  // Quota / billing
+  if (lower.includes('quota') || lower.includes('credit') || lower.includes('billing')) {
+    return 'API quota exceeded. Check your Anthropic billing.';
+  }
+  // Network
+  if (lower.includes('failed to fetch') || lower.includes('network')) {
+    return 'Network error. Check your connection and try again.';
+  }
+  // Generic API error codes are safe to show (e.g. "API error 500")
+  if (/^api error \d{3}$/.test(lower)) return msg;
+  // Fallback — don't expose anything else
+  return 'An error occurred. Try again.';
+}
+
 /* ── Anthropic API call ──────────────────────────────────────────── */
 
 async function callClaude(system, userMsg) {
@@ -229,10 +263,13 @@ async function runWorkflow() {
       s => document.getElementById('status-' + s).textContent === 'running'
     );
     if (failedStage) {
-      setCard(failedStage, 'error', 'Error: ' + (err.message || 'Request failed. Try again.'));
+      // Sanitize: never render raw err.message — Anthropic auth errors can
+      // echo back the API key (e.g. "invalid x-api-key: sk-ant-...").
+      // Map known error patterns to safe generic messages instead.
+      const safeMsg = sanitizeErrorMessage(err.message);
+      setCard(failedStage, 'error', 'Error: ' + safeMsg);
       setPill(failedStage, 'error');
     }
-    // Do NOT log err.message — it might contain the API key in some edge cases
     console.error('[Workflow error]', err.name);
   }
 
@@ -266,5 +303,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Enter key shortcut
   document.getElementById('topic-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') runWorkflow();
+  });
+
+  // Escape key closes the API key modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('key-modal');
+      if (modal && !modal.classList.contains('hidden')) closeKeyModal();
+    }
   });
 });
